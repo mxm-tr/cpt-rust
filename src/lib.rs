@@ -6,21 +6,21 @@ pub mod data_types {
     use serde::{Serialize, Deserialize};
 
     #[derive(Serialize, Deserialize, Debug)]
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Eq, PartialOrd, PartialEq, Ord)]
     pub enum DataTypes{
         Integer(i32),
         None
     }
 
-    impl PartialEq for DataTypes {
-        fn eq(&self, other: &Self) -> bool {
-            println!("Comparing {:?} with {:?}", self, other);
-            match self {
-                Self::Integer(num1) => match other { Self::Integer(num2) => num1 == num2, _ => false },
-                _ => false
-            }
-        }
-    }
+    // impl PartialEq for DataTypes {
+    //     fn eq(&self, other: &Self) -> bool {
+    //         println!("Comparing {:?} with {:?}", self, other);
+    //         match self {
+    //             Self::Integer(num1) => match other { Self::Integer(num2) => num1 == num2, _ => false },
+    //             _ => false
+    //         }
+    //     }
+    // }
 }
 
 pub mod cpt{
@@ -29,10 +29,46 @@ pub mod cpt{
     use crate::data_types::DataTypes as DataTypes;
     use crate::nodes::{Node, NodeId};
 
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct InvertedIndex<T>{
+        values: Vec<T>,
+        node_ids: Vec<Vec<NodeId>>,
+    }
+    impl<T> InvertedIndex<T>{
+        pub fn new() -> InvertedIndex<T> {
+            InvertedIndex { 
+                values: Vec::<T>::new(),
+                node_ids: Vec::<Vec<NodeId>>::new(),
+            }
+        }
+    }
+    impl InvertedIndex<DataTypes>{
+        pub fn get_value_ids(&self, value: DataTypes) -> Option<&Vec<NodeId>> {
+            if let Ok(value_id) = self.values.binary_search(&value){
+                self.node_ids.get(value_id)
+            }else{
+                None
+            }
+        }
+
+        fn insert_value(&mut self, value: DataTypes, node_id: NodeId){
+            // Check whether the value exists in the index
+            // If the value already exists, just add the node_id
+            // in the list of node_ids associated to this value
+            if let Ok(value_id) = self.values.binary_search(&value){
+                self.node_ids[value_id].push(node_id)
+            }else{
+            // If it doesn't exist create a new entry for this value
+                self.values.push(value);
+                self.node_ids.push([node_id].to_vec());
+            }
+        }
+    }
+
     use serde::{Serialize, Deserialize};
     #[derive(Serialize, Deserialize, Debug)]
     pub struct CPT<T> {
-        alphabet: Vec<T>,
+        pub inverted_index: InvertedIndex<T>,
         pub nodes: Vec<Node<T>>,
         // root: Node<T>,
     }
@@ -51,14 +87,34 @@ pub mod cpt{
             serde_json::to_string_pretty(self).unwrap()
         }
 
+        pub fn to_dot(&self) -> String{
+            let mut dot_string = String::from("digraph  CPT { \n");
+
+            for (id, node) in self.nodes.as_slice().iter().enumerate(){
+                // Declare a node using
+                // N0[label="Node 0"];
+                // Declare an edge using
+                // N0 -> N1[label=""];
+                
+                dot_string.push_str(&format!("{}[label=\"{:?}\"];\n", id, node.data));
+                for child_id in node.children.as_slice(){
+                    dot_string.push_str(&format!("{} -> {:?};\n", id, &child_id.index0()));
+                }
+            }
+            dot_string.push_str("}");
+            dot_string
+        }
+
         pub fn get_root_id() -> NodeId{
             NodeId::new()
         }
 
-        pub fn new_node(&mut self, new_node: Node<DataTypes>) -> NodeId {
+        pub fn new_node(&mut self, new_node: Node<DataTypes>) -> NodeId{
             let next_index1 = NonZeroUsize::new(self.nodes.len().wrapping_add(1)).expect("Cannot access latest index");
             self.nodes.push(new_node);
-            NodeId::from_non_zero_usize(next_index1)
+            let new_node_id = NodeId::from_non_zero_usize(next_index1);
+            self.inverted_index.insert_value(self.get_data(new_node_id).expect("Cannot insert data in inverted index"), new_node_id);
+            new_node_id
         }
 
         pub fn get(&self, id: NodeId) -> Option<&Node<DataTypes>> {
@@ -78,7 +134,9 @@ pub mod cpt{
             *self.get(id).expect("No node found").get()
         }
 
-        pub fn child_exists(&self, new_data: DataTypes, node_id: NodeId) -> Option<NodeId> where DataTypes: PartialEq<DataTypes> + Copy{
+        pub fn child_exists(&self, new_data: DataTypes, node_id: NodeId) -> Option<NodeId>
+            where DataTypes: PartialEq<DataTypes> + Copy {
+
             let mut matched_node_id = None;
             println!("Does child with value {:?} exists for node {:?}", new_data, node_id);
             if let Some(parent_node) = self.get(node_id){
@@ -136,7 +194,7 @@ pub mod cpt{
         fn default() -> Self {
             let mut nodes = Vec::new();
             nodes.push(Node {children: Vec::new(), parent: None, data: None});
-            Self { nodes: nodes, alphabet: Vec::new() }
+            Self { nodes: nodes, inverted_index: InvertedIndex::new() }
         }
     }
 }
@@ -161,6 +219,12 @@ pub mod nodes {
 
         pub fn new() -> NodeId {
             Self::default()
+        }
+
+        pub fn new_with_value(value: usize) -> NodeId {
+            NodeId {index1: NonZeroUsize::new(value)
+                .expect(&format!("Cannot create index with value {}", value))
+            }
         }
 
         pub(crate) fn index0(self) -> usize {

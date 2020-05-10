@@ -1,0 +1,13 @@
+digraph  CPT { 
+0[label="None"];
+0 -> 1;
+1[label="Some(Integer(2))"];
+1 -> 2;
+1 -> 4;
+2[label="Some(Integer(2))"];
+2 -> 3;
+3[label="Some(Integer(3))"];
+4[label="Some(Integer(3))"];
+4 -> 5;
+5[label="Some(Integer(3))"];
+}
