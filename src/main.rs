@@ -8,20 +8,20 @@ fn main() -> std::io::Result<()> {
     // let seq1: [crate::DataTypes; 6] = [DataTypes::Integer(1), DataTypes::Integer(2), DataTypes::Integer(3), DataTypes::Integer(4), DataTypes::Integer(5), DataTypes::Integer(5)];
     // let seq2: [crate::DataTypes; 6] = [DataTypes::Integer(2), DataTypes::Integer(2), DataTypes::Integer(3), DataTypes::Integer(4), DataTypes::Integer(5), DataTypes::Integer(5)];
     
-    // let seq1: [crate::DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(2), DataTypes::Integer(3)];
-    // let seq2: [crate::DataTypes; 3] = [DataTypes::Integer(4), DataTypes::Integer(5), DataTypes::Integer(6)];
-    // let seq3: [crate::DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(5), DataTypes::Integer(6)];
-    // let seq4: [crate::DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(5), DataTypes::Integer(4)];
+    let seq1: [crate::DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(2), DataTypes::Integer(3)];
+    let seq2: [crate::DataTypes; 3] = [DataTypes::Integer(4), DataTypes::Integer(5), DataTypes::Integer(6)];
+    let seq3: [crate::DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(5), DataTypes::Integer(6)];
+    let seq4: [crate::DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(5), DataTypes::Integer(4)];
     
-    let seq1: [DataTypes; 3] = [DataTypes::Integer(2), DataTypes::Integer(2), DataTypes::Integer(3)];
-    let seq2: [DataTypes; 3] = [DataTypes::Integer(2), DataTypes::Integer(3), DataTypes::Integer(3)];
+    // let seq1: [DataTypes; 3] = [DataTypes::Integer(2), DataTypes::Integer(2), DataTypes::Integer(3)];
+    // let seq2: [DataTypes; 3] = [DataTypes::Integer(2), DataTypes::Integer(3), DataTypes::Integer(3)];
     
     let mut cpt = CPT::new();
 
     cpt.add_sequence_to_root(&seq1);
     cpt.add_sequence_to_root(&seq2);
-    // cpt.add_sequence_to_root(&seq3);
-    // cpt.add_sequence_to_root(&seq4);
+    cpt.add_sequence_to_root(&seq3);
+    cpt.add_sequence_to_root(&seq4);
 
     println!("Inverted index = {:?}", cpt.inverted_index );
     // println!("s2 = {:?}", seq2 );

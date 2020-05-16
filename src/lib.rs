@@ -66,14 +66,22 @@ pub mod cpt{
     }
 
     use serde::{Serialize, Deserialize};
+
     #[derive(Serialize, Deserialize, Debug)]
     pub struct CPT<T> {
         pub inverted_index: InvertedIndex<T>,
         pub nodes: Vec<Node<T>>,
-        // root: Node<T>,
+        // The lookup table references the last node of each sequence
+        pub sequences_lookup_table: Vec<NodeId>
     }
-
-    impl CPT<DataTypes>{
+    impl<'a, T> Default for CPT<T> {
+        fn default() -> Self {
+            let mut nodes = Vec::new();
+            nodes.push(Node {children: Vec::new(), parent: None, data: None});
+            Self { nodes: nodes, inverted_index: InvertedIndex::new(), sequences_lookup_table: Vec::new() }
+        }
+    }
+    impl<'a> CPT<DataTypes>{
 
         pub fn new() -> CPT<DataTypes> {
             Self::default()
@@ -88,7 +96,8 @@ pub mod cpt{
         }
 
         pub fn to_dot(&self) -> String{
-            let mut dot_string = String::from("digraph  CPT { \n");
+            let mut dot_string = String::from("digraph  Result { \n");
+            dot_string.push_str("subgraph cluster_cpt {");
 
             for (id, node) in self.nodes.as_slice().iter().enumerate(){
                 // Declare a node using
@@ -101,6 +110,14 @@ pub mod cpt{
                     dot_string.push_str(&format!("{} -> {:?};\n", id, &child_id.index0()));
                 }
             }
+            dot_string.push_str("}\n");
+            dot_string.push_str("subgraph cluster_seq {");
+
+            for (id, last_node_id) in self.sequences_lookup_table.as_slice().iter().enumerate(){
+                dot_string.push_str(&format!("seq{}[label=\"Seq {:?}\"; shape=\"rectangle\"];\n", id, id));
+                dot_string.push_str(&format!("seq{} -> {:?};\n", id, last_node_id.index0()));
+            }
+            dot_string.push_str("}");
             dot_string.push_str("}");
             dot_string
         }
@@ -186,17 +203,11 @@ pub mod cpt{
             for item in sequence{
                 current_node_id = self.add_child(*item, current_node_id);
             }
+            self.sequences_lookup_table.push(current_node_id);
         }
 
     }
 
-    impl<T> Default for CPT<T> {
-        fn default() -> Self {
-            let mut nodes = Vec::new();
-            nodes.push(Node {children: Vec::new(), parent: None, data: None});
-            Self { nodes: nodes, inverted_index: InvertedIndex::new() }
-        }
-    }
 }
 
 pub mod nodes {
