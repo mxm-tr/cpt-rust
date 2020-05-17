@@ -23,13 +23,16 @@ fn main() -> std::io::Result<()> {
     cpt.add_sequence_to_root(&seq3);
     cpt.add_sequence_to_root(&seq4);
 
+
+    let seq_find: [crate::DataTypes; 2] = [DataTypes::Integer(1), DataTypes::Integer(5)];
+
     println!("---------");
 
-    cpt.match_sequence_backward(&seq4);
+    cpt.match_sequence_backward(&seq_find);
 
     println!("---------");
 
-    cpt.match_sequence_forward(&seq4);
+    cpt.match_sequence_forward(&seq_find);
 
     println!("Inverted index = {:?}", cpt.inverted_index );
     // println!("s2 = {:?}", seq2 );

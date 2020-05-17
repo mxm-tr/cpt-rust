@@ -229,7 +229,7 @@ pub mod cpt{
             println!("Added sequence {:?} to node {:?}", sequence, node_id);
         }
 
-        pub fn match_sequence(&self, sequence: &[DataTypes], backwards: bool) -> Vec<NodeId> {
+        pub fn match_sequence(&self, sequence: &[DataTypes], backwards: bool) -> Vec<Vec<NodeId>> {
             // Given an input sequence, match the longest possible sequences in the CPT.
             // This is can be implemented in two ways:
             //  - starting from the first item of the sequence,
@@ -244,10 +244,9 @@ pub mod cpt{
             }
         }
 
-        pub fn match_sequence_backward(&self, sequence: &[DataTypes]) -> Vec<NodeId>{
-            // This returns the first NodeID of the longest matched sequence
-            let mut current_node_ids = Vec::<NodeId>::new();
-            let mut new_node_ids = Vec::<NodeId>::new();
+        pub fn match_sequence_backward(&self, sequence: &[DataTypes]) -> Vec<Vec<NodeId>>{
+            // This returns lists of NodeIDs for matched sequences
+            let mut current_node_ids = Vec::<Vec<NodeId>>::new();
             println!("Matching sequence backwards {:?}", sequence);
 
             // Given an input sequence, get its last item
@@ -263,27 +262,23 @@ pub mod cpt{
             if let Some(last_value) = sequence_iter.next() {
                 // Get all nodes matching this value, this is our initial list of possible nodes
                 if let Some(possible_node_ids) = self.inverted_index.get_value_ids(*last_value){
-                    current_node_ids = possible_node_ids.to_vec();
+                    current_node_ids = possible_node_ids.iter().map(|&e| vec![e]).collect();
                     // Get the previous item in the sequence to match,
                     // at each iteration we will filter the possible_node_ids
                     while let Some(&next_item) = sequence_iter.next(){
                         println!("Current NodeIds at item {:?}th item in sequence {:?}: {:?}", count, sequence, current_node_ids);
                         count = count + 1;
-                        new_node_ids = current_node_ids.iter().filter_map(|&possible_node_id|
-                            if let Some(possible_node) = self.get(possible_node_id){
+                        current_node_ids = current_node_ids.into_iter().map(|possible_node_ids|
+                            if let Some(possible_node) = self.get(*possible_node_ids.first().unwrap()){
                                 if let Some(parent_node_id) = possible_node.parent{
                                     if let Some(parent_node_data) = self.get_data(parent_node_id){
                                         if InvertedIndex::element_matching(parent_node_data, next_item) {
-                                            Some(parent_node_id)
-                                        }else { None }
-                                    } else { None }
-                                } else { None }
-                            } else { None }
+                                            [vec![parent_node_id], possible_node_ids].concat()
+                                        } else { possible_node_ids }
+                                    } else { possible_node_ids }
+                                } else { possible_node_ids }
+                            } else { possible_node_ids }
                         ).collect();
-                        if new_node_ids.len() == 0{
-                            break
-                        }
-                        current_node_ids = new_node_ids;
                     }
                 }
             }
@@ -291,10 +286,10 @@ pub mod cpt{
             current_node_ids
         }
 
-        pub fn match_sequence_forward(&self, sequence: &[DataTypes]) -> Vec<NodeId>{
+        pub fn match_sequence_forward(&self, sequence: &[DataTypes]) -> Vec<Vec<NodeId>>{
+            
             // This returns the last NodeID of the longest matched sequence
-            let mut current_node_ids = Vec::<NodeId>::new();
-            let mut new_node_ids = Vec::<NodeId>::new();
+            let mut current_node_ids = Vec::<Vec<NodeId>>::new();
             println!("Matching sequence forward {:?}", sequence);
 
             // Given an input sequence, get its first item
@@ -307,27 +302,24 @@ pub mod cpt{
             if let Some(first_value) = sequence_iter.next() {
                 // Get all nodes matching this value, this is our initial list of possible nodes
                 if let Some(possible_node_ids) = self.inverted_index.get_value_ids(*first_value){
-                    current_node_ids = possible_node_ids.to_vec();
+                    current_node_ids = possible_node_ids.iter().map(|&e| vec![e]).collect();
+
                     // Get the next item in the sequence to match,
                     // at each iteration we will filter the possible_node_ids
                     while let Some(&next_item) = sequence_iter.next(){
                         println!("Current NodeIds at item {:?}th item in sequence {:?}: {:?}", count, sequence, current_node_ids);
                         count = count + 1;
-                        new_node_ids = current_node_ids.iter().filter_map(|&possible_node_id|
-                                if let Some(possible_node) = self.get(possible_node_id){
-                                    Some(possible_node.children.iter().filter_map( |&children_node_id| {
-                                        if let Some(children_node_data) = self.get_data(children_node_id){
-                                            if InvertedIndex::element_matching(children_node_data, next_item){
-                                                Some(children_node_id)
-                                            } else { None }
+                        current_node_ids = current_node_ids.into_iter().filter_map(|possible_node_ids|
+                                if let Some(possible_node) = self.get(*possible_node_ids.last().unwrap()){
+                                    Some(possible_node.children.clone().into_iter().filter_map( |child_node_id| {
+                                        if let Some(child_node_data) = self.get_data(child_node_id){
+                                            if InvertedIndex::element_matching(child_node_data, next_item){
+                                                Some([possible_node_ids.clone(), vec![child_node_id]].concat())
+                                            } else { Some(possible_node_ids.clone()) }
                                         } else { None }
-                                    }).collect::<Vec<NodeId>>())
+                                    }).collect::<Vec<Vec<NodeId>>>())
                                 } else { None }
-                        ).collect::<Vec<Vec<NodeId>>>().concat();
-                        if new_node_ids.len() == 0{
-                            break
-                        }
-                        current_node_ids = new_node_ids;
+                        ).collect::<Vec<Vec<Vec<NodeId>>>>().concat();
                     }
                 }
             }
