@@ -23,6 +23,14 @@ fn main() -> std::io::Result<()> {
     cpt.add_sequence_to_root(&seq3);
     cpt.add_sequence_to_root(&seq4);
 
+    println!("---------");
+
+    cpt.match_sequence_backward(&seq4);
+
+    println!("---------");
+
+    cpt.match_sequence_forward(&seq4);
+
     println!("Inverted index = {:?}", cpt.inverted_index );
     // println!("s2 = {:?}", seq2 );
     // for n in cpt.nodes {
