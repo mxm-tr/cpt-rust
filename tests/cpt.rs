@@ -1,12 +1,10 @@
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroUsize;
-    use serde::{Serialize, Deserialize};
 
     use cpt_rust::cpt::CPT;
     use cpt_rust::data_types::DataTypes;
-    use cpt_rust::nodes::{Node, NodeId};
+    use cpt_rust::nodes::{NodeId};
     
     #[test]
     fn it_works() {
@@ -19,7 +17,7 @@ mod tests {
         cpt.add_sequence(&seq2, NodeId::new());
 
         // Test the CPT structure
-        let expected_result = "{\"inverted_index\":{\"values\":[{\"Integer\":2},{\"Integer\":3}],\"node_ids\":[[{\"index1\":2},{\"index1\":3}],[{\"index1\":4},{\"index1\":5},{\"index1\":6}]]},\"nodes\":[{\"parent\":null,\"children\":[{\"index1\":2}],\"data\":null},{\"parent\":{\"index1\":1},\"children\":[{\"index1\":3},{\"index1\":5}],\"data\":{\"Integer\":2}},{\"parent\":{\"index1\":2},\"children\":[{\"index1\":4}],\"data\":{\"Integer\":2}},{\"parent\":{\"index1\":3},\"children\":[],\"data\":{\"Integer\":3}},{\"parent\":{\"index1\":2},\"children\":[{\"index1\":6}],\"data\":{\"Integer\":3}},{\"parent\":{\"index1\":5},\"children\":[],\"data\":{\"Integer\":3}}]}";
+        let expected_result = "{\"inverted_index\":{\"values\":[{\"Integer\":2},{\"Integer\":3}],\"node_ids\":[[{\"index1\":2},{\"index1\":3}],[{\"index1\":4},{\"index1\":5},{\"index1\":6}]]},\"nodes\":[{\"parent\":null,\"children\":[{\"index1\":2}],\"data\":null},{\"parent\":{\"index1\":1},\"children\":[{\"index1\":3},{\"index1\":5}],\"data\":{\"Integer\":2}},{\"parent\":{\"index1\":2},\"children\":[{\"index1\":4}],\"data\":{\"Integer\":2}},{\"parent\":{\"index1\":3},\"children\":[],\"data\":{\"Integer\":3}},{\"parent\":{\"index1\":2},\"children\":[{\"index1\":6}],\"data\":{\"Integer\":3}},{\"parent\":{\"index1\":5},\"children\":[],\"data\":{\"Integer\":3}}],\"sequences_lookup_table\":[{\"index1\":4},{\"index1\":6}]}";
         assert_eq!(cpt.to_json(), expected_result);
         
         // Test the inverted index lookup function
