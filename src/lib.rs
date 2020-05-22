@@ -6,7 +6,7 @@ pub mod data_types {
     use serde::{Serialize, Deserialize};
 
     #[derive(Serialize, Deserialize, Debug)]
-    #[derive(Copy, Clone, Eq, PartialOrd, PartialEq, Ord)]
+    #[derive(Copy, Clone, Eq, PartialOrd, PartialEq, Ord, Hash)]
     pub enum DataTypes{
         Integer(i32),
         None
@@ -85,6 +85,7 @@ pub mod cpt{
     }
 
     use serde::{Serialize, Deserialize};
+    use std::collections::HashMap;
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct CPT<T> {
@@ -326,11 +327,161 @@ pub mod cpt{
             println!("Matching node_ids at the end for sequence {:?}: {:?}", sequence, current_node_ids);
             current_node_ids
         }
-    }
 
+        pub fn predict(&self, sequence: &[DataTypes], prefix_length: usize) -> Vec<(DataTypes, usize, f32)>{
+            // This is an implementation of the prediction algorithm implemented in
+            // ADMA2013_Compact_Prediction_tree
+            // The goal is to predict the next values of an input sequence.
+
+            // Given an input sequence: xxyyy
+            // And a predicted sequence: yyyzzz,
+            // yyy is the "prefix", that will be used to predict the "consequent" zzz
+
+            // The output is a sorted list of potential next items, with their two prediction score:
+            // E.g [(Integer(1), 3, 3.0), ...]
+            // The first step is to identify the unique value in our prefix,
+            let prefix = &sequence[(sequence.len() - prefix_length)..sequence.len()].to_vec();
+            let mut prefix_set = prefix.clone();
+            prefix_set.sort();
+            prefix_set.dedup();
+            println!("Looking for sequences in the training set with the last {:?} values in {:?}", prefix_length, sequence);
+            println!("Prediction prefix unique values: {:?}", prefix_set);
+
+            // For each of the unique item in the prefix, get the ids of the sequence that contain them
+            let all_match_sequence_ids: Vec<Vec<usize>> = prefix_set.iter().map(|prefix_value| {
+                // We get the nodes that match these values
+                if let Some(node_ids) = self.inverted_index.get_value_ids(*prefix_value){
+                    // For each node matching a given value, we have to find
+                    // What training sequences match these nodes
+                    // We will descend the nodes children until we reach an end
+                    let mut current_node_ids: Vec<NodeId> = node_ids.clone();
+                    let mut leaf_node_ids: Vec<NodeId> =  Vec::<NodeId>::new();
+                    println!("Prefix unique value {:?} matched with {:?} nodes", prefix_value, node_ids.len());
+                    while current_node_ids.len() > 0{
+                        leaf_node_ids.extend(current_node_ids.iter().filter(|&node_id| self.get(*node_id).unwrap().children.len() == 0));
+                        current_node_ids = current_node_ids.clone().into_iter()
+                                .filter(|&node_id| self.get(node_id).unwrap().children.len() > 0)
+                                .map(|node_id| self.get(node_id).unwrap().children.clone() ).collect::<Vec<Vec<NodeId>>>().concat();
+                    }
+                    // Now let's lookup the training sequences that point to the leaf nodes
+                    let match_sequence_ids: Vec<usize> = leaf_node_ids.iter().map(|leaf_node_id| self.sequences_lookup_table.binary_search(leaf_node_id).unwrap_or_else(|x| x) ).collect();
+                    println!("Matching sequences for prefix value {:?}: {:?}", prefix_value, match_sequence_ids);
+                    match_sequence_ids
+                } else { vec![] }
+            }).collect();
+
+            // Now we have the list of sequences matching each element in the prefix, let's look at the unique sequence ids
+            let mut unique_matched_sequence_ids = all_match_sequence_ids.concat();
+            unique_matched_sequence_ids.sort();
+            unique_matched_sequence_ids.dedup();
+
+            // These unique sequence ids will be used to find the "consequent":
+            // For each sequence, let's look at the last occurence of an item the sequence:
+            // Given the input sequence xxyy with yy being the prefix, If the training Sequence aabbxxyz exists, the consequent returned is yz
+            let mut count_consequent_values_support = HashMap::<DataTypes,usize>::new();
+            unique_matched_sequence_ids.iter().for_each(|sequence_id| {
+                if let Some(&last_node_id) = self.sequences_lookup_table.get(*sequence_id){
+                    let mut current_node_id = last_node_id;
+                    // let mut consequent: Vec<&Node<DataTypes>> = Vec::<&Node<DataTypes>>::new();
+                    let mut consequent: Vec<NodeId> = Vec::<NodeId>::new();
+                    while let Some(current_node) = self.get(current_node_id) {
+                        // consequent.push(current_node);
+                        if let Some(node_data) = current_node.data {
+
+                            // Now check whether the current node data belongs to the input sequence
+                            if sequence.iter().any(|&sequence_value| node_data == sequence_value ) {
+                                break;
+                            }
+                            else{
+                                consequent.push(current_node_id);
+                                
+                                // This will count the amount of each value in the consequents
+                                *count_consequent_values_support.entry(node_data).or_insert(0) += 1;
+
+                                // If not, retry the current node's parent
+                                if let Some(current_node_parent) = current_node.parent{
+                                    current_node_id = current_node_parent;
+                                }
+                                else{
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // Consequent items have been pushed, need to reverse the list
+                    consequent.reverse();
+                    // The consequent given a training sequence is now:
+                    // xyyyyy: x being the item that the training sequence and the input sequence have in common
+                    println!("Consequent for input sequence {:?} given training sequence {:?}: {:?}", sequence, sequence_id, consequent.iter().map(|node_id| format!("{:?}, {:?}", node_id, self.get_data(*node_id))).collect::<Vec<String>>().join(" -> "));
+                }
+            });
+
+            // The final step is to calculate the score of each consequent, using the following metrics:
+            // Support:
+            // The support is calculated for each individual value in our consequents.
+            // It is the number of times a value appears in training sequences that matches our input sequence
+            // In our case, it will be the unique count of values in the consequents, counted in the unique_matched_sequence_ids.
+            
+            // let mut count_matched_sequences_values_support = HashMap::<DataTypes,usize>::new();
+            // unique_matched_sequence_ids.iter().for_each(|sequence_id| {
+            //     if let Some(&last_node_id) = self.sequences_lookup_table.get(*sequence_id){
+            //         let mut current_node_id = last_node_id;
+            //         while let Some(current_node) = self.get(current_node_id) {
+            //             if let Some(node_data) = current_node.data {
+            //                 // Insert the value in the counting table
+            //                 *count_matched_sequences_values_support.entry(node_data).or_insert(0) += 1;
+
+            //                 // Set the current node to the current node's parent
+            //                 if let Some(current_node_parent) = current_node.parent{
+            //                     current_node_id = current_node_parent;
+            //                 }
+            //                 else{
+            //                     break;
+            //                 }
+            //             }
+            //             else{
+            //                 break;
+            //             }
+            //         }
+            //     }
+            // });
+            // We now have the count of consequent's unique values among matched training sequences
+            println!("Count of consequent's unique values among consequents: {:?}: {:?}", unique_matched_sequence_ids, count_consequent_values_support);
+        
+        
+            // The secondary metric is the confidence: for each item in the support counting hashmap,
+            // we divide the support value by the number of time this item appears in the tree
+            let mut count_consequent_values_support_confidence:  Vec<(DataTypes, usize, f32)> = count_consequent_values_support.iter().map(|(item, support)|{
+                    (*item, *support, (*support as f32) / (self.inverted_index.get_value_ids(*item).unwrap().len() as f32))
+                }).collect();
+
+            // We now have the confidence value for each indivual item        
+            // Finally we sort the values using the support and the confidence:
+            count_consequent_values_support_confidence.sort_by(|a,b| {
+                    if a.1 < b.1 {
+                        Ordering::Less
+                    }else {
+                        if a.1 > b.1 {
+                            Ordering::Greater
+                        }
+                        else{
+                            if a.2 < b.2 {
+                                Ordering::Less
+                            }else{
+                                Ordering::Greater
+                            }
+                        }
+                    }
+            });
+            count_consequent_values_support_confidence.reverse();
+            println!("Sorted list of predicted items and their scores: {:?}", count_consequent_values_support_confidence);
+            count_consequent_values_support_confidence
+        }
+    }
 }
 
 pub mod nodes {
+    use core::cmp::Ordering;
     use std::num::NonZeroUsize;
     use std::fmt::Display as FmtDisplay;
     use std::fmt::Formatter as FmtFormatter;
@@ -341,10 +492,29 @@ pub mod nodes {
 
     #[derive(Serialize, Deserialize, Debug)]
     #[derive(Copy, Clone)]
+    #[derive(Eq)]
     pub struct NodeId {
         // Class used for NodeIDs, 1 indexing is the default
         // .index0 is implmented to get the 0 value
         pub index1: NonZeroUsize,
+    }
+
+   impl Ord for NodeId {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.index1.cmp(&other.index1)
+        }
+    }
+
+    impl PartialOrd for NodeId {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+    
+    impl PartialEq for NodeId {
+        fn eq(&self, other: &Self) -> bool {
+            self.index1 == other.index1
+        }
     }
 
     impl NodeId {
@@ -391,7 +561,7 @@ pub mod nodes {
     impl Node<DataTypes> {
         /// Returns a reference to the node data.
         pub fn get(&self) -> &Option<DataTypes> {
-            println!("---- Accessing node data: {:?}", &self.data);
+            // println!("---- Accessing node data: {:?}", &self.data);
             &self.data
         }
 

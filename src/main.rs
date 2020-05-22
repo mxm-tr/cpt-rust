@@ -24,7 +24,7 @@ fn main() -> std::io::Result<()> {
     cpt.add_sequence_to_root(&seq4);
 
 
-    let seq_find: [crate::DataTypes; 2] = [DataTypes::Integer(1), DataTypes::Integer(5)];
+    let seq_find: [crate::DataTypes; 3] = [DataTypes::Integer(3), DataTypes::Integer(7), DataTypes::Integer(1)];
 
     println!("---------");
 
@@ -34,7 +34,11 @@ fn main() -> std::io::Result<()> {
 
     cpt.match_sequence_forward(&seq_find);
 
-    println!("Inverted index = {:?}", cpt.inverted_index );
+    println!("---------");
+
+    cpt.predict(&seq_find, 3);
+
+    // println!("Inverted index = {:?}", cpt.inverted_index );
     // println!("s2 = {:?}", seq2 );
     // for n in cpt.nodes {
     //     println!("node parent_id = {:?} \t children = {:?} \t data = {:?}", n.parent, n.children,n.data);

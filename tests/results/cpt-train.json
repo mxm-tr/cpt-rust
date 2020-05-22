@@ -1,0 +1,159 @@
+{
+    "inverted_index":{
+      "values":[
+        {
+          "Integer":2
+        
+  },
+        {
+          "Integer":3
+        
+  }
+      
+  ],
+      "node_ids":[
+        [
+          {
+            "index1":2
+          
+  },
+          {
+            "index1":3
+          
+  }
+        
+  ],
+        [
+          {
+            "index1":4
+          
+  },
+          {
+            "index1":5
+          
+  },
+          {
+            "index1":6
+          
+  }
+        
+  ]
+      
+  ]
+    
+  },
+    "nodes":[
+      {
+        "parent":null,
+        "children":[
+          {
+            "index1":2
+          
+  }
+        
+  ],
+        "data":null
+      
+  },
+      {
+        "parent":{
+          "index1":1
+        
+  },
+        "children":[
+          {
+            "index1":3
+          
+  },
+          {
+            "index1":5
+          
+  }
+        
+  ],
+        "data":{
+          "Integer":2
+        
+  }
+      
+  },
+      {
+        "parent":{
+          "index1":2
+        
+  },
+        "children":[
+          {
+            "index1":4
+          
+  }
+        
+  ],
+        "data":{
+          "Integer":2
+        
+  }
+      
+  },
+      {
+        "parent":{
+          "index1":3
+        
+  },
+        "children":[
+  
+        
+  ],
+        "data":{
+          "Integer":3
+        
+  }
+      
+  },
+      {
+        "parent":{
+          "index1":2
+        
+  },
+        "children":[
+          {
+            "index1":6
+          
+  }
+        
+  ],
+        "data":{
+          "Integer":3
+        
+  }
+      
+  },
+      {
+        "parent":{
+          "index1":5
+        
+  },
+        "children":[
+  
+        
+  ],
+        "data":{
+          "Integer":3
+        
+  }
+      
+  }
+    
+  ],
+    "sequences_lookup_table":[
+      {
+        "index1":4
+      
+  },
+      {
+        "index1":6
+      
+  }
+    
+  ]
+}
