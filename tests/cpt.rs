@@ -3,10 +3,10 @@
 mod tests {
 
     use serde_json::Value;
-    use cpt_rust::cpt::CPT;
-    use cpt_rust::data_types::DataTypes;
-    use cpt_rust::nodes::{NodeId};
-    use std::io::Read;
+    use cpt_rust::cpt::cpt::CPT;
+    use cpt_rust::data_types::data_types::DataTypes;
+    use cpt_rust::nodes::nodes::{NodeId};
+    use std::io::Write;
     use std::fs::File;
 
     #[test]
@@ -40,7 +40,7 @@ mod tests {
         let expected_result: serde_json::Value = serde_json::from_reader(file)
         .expect("file should be proper JSON");
         let seq1: [DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(2), DataTypes::Integer(3)];
-        let seq2: [DataTypes; 3] = [DataTypes::Integer(4), DataTypes::Integer(5), DataTypes::Integer(6)];
+        let seq2: [DataTypes; 3] = [DataTypes::Integer(3), DataTypes::Integer(5), DataTypes::Integer(6)];
         let seq3: [DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(5), DataTypes::Integer(6)];
         let seq4: [DataTypes; 3] = [DataTypes::Integer(1), DataTypes::Integer(5), DataTypes::Integer(4)];
         let seq_find: [DataTypes; 3] = [DataTypes::Integer(3), DataTypes::Integer(7), DataTypes::Integer(1)];
@@ -50,6 +50,10 @@ mod tests {
         cpt.add_sequence_to_root(&seq2);
         cpt.add_sequence_to_root(&seq3);
         cpt.add_sequence_to_root(&seq4);
+
+        // let mut file = File::create("tests/results/test.dot").unwrap();
+        // file.write(cpt.to_dot().as_bytes()).unwrap();
+
         cpt.predict(&seq_find, 3);
         println!("{:?}", serde_json::to_string(&cpt.predict(&seq_find, 3)).unwrap());
         assert_eq!(
