@@ -11,6 +11,7 @@ pub mod data_types {
     #[derive(Copy, Clone, Eq, PartialOrd, PartialEq, Ord, Hash)]
     pub enum DataTypes{
         Integer(usize),
+        U8(u8)
     }
 
     #[derive(Serialize, Deserialize, Debug)]

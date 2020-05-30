@@ -211,10 +211,10 @@ pub mod cpt{
         }
 
         pub fn update_node(& mut self, id: NodeId, new_node: Node<DataTypes>) {
-            println!("Updating node {:?}:", id);
-            println!("-- Before: {:?}", self.nodes.get(id.index0()));
+            // println!("Updating node {:?}:", id);
+            // println!("-- Before: {:?}", self.nodes.get(id.index0()));
             self.nodes[id.index0()] = new_node;
-            println!("-- After: {:?}", self.nodes.get(id.index0()));
+            // println!("-- After: {:?}", self.nodes.get(id.index0()));
         }
 
         pub fn get_data(&self, id: NodeId) -> Option<DataTypes> {
@@ -240,7 +240,7 @@ pub mod cpt{
         }
 
         pub fn add_child(&mut self, new_data: DataTypes, node_id: NodeId)-> NodeId where DataTypes: PartialEq<DataTypes> + Copy {
-            println!("Adding value {:?} to CPT at node {:?}", new_data, node_id);
+            // println!("Adding value {:?} to CPT at node {:?}", new_data, node_id);
             match self.child_exists(new_data, node_id)  {
                 // If no child exists with the current new data, create a new node
                 None => {
@@ -263,17 +263,17 @@ pub mod cpt{
             }
         }
 
-        pub fn add_sequence_to_root(&mut self, sequence: &[DataTypes]) {
+        pub fn add_sequence_to_root(&mut self, sequence: Vec<DataTypes>) {
             self.add_sequence(sequence, CPT::get_root_id())
         }
 
-        pub fn add_sequence(&mut self, sequence: &[DataTypes], node_id: NodeId) where DataTypes: PartialEq<DataTypes> + Copy {
+        pub fn add_sequence(&mut self, sequence: Vec<DataTypes>, node_id: NodeId) where DataTypes: PartialEq<DataTypes> + Copy {
             // "Training" of the tree: it adds each item of a sequence to the tree,
             // starting from the Node at node_id, 
             let mut current_node_id = node_id;
-            for item in sequence{
-                current_node_id = self.add_child(*item, current_node_id);
-            }
+            sequence.iter().for_each(|&item|{
+                current_node_id = self.add_child(item, current_node_id);
+            });
             self.sequences_lookup_table.push(current_node_id);
             println!("Added sequence {:?} to node {:?}", sequence, node_id);
         }
@@ -309,17 +309,16 @@ pub mod cpt{
                 // );
             });
             // Get all metrics types, and sort the list using each of them
-            if let Some(first_element) = matched_sequences_agg.get(0){
-                first_element.clone().1.keys().for_each(|metric| {
-                    matched_sequences_agg.sort_by(|a, b| {
-                        a.1.get(metric).expect(&format!("Metric {:?} not found in element {:?}", metric, a.1))
-                            .cmp(b.1.get(metric).expect(&format!("Metric {:?} not found in element {:?}", metric, b.1)))
-                    })
-                });
-            }
+            match_functions.iter().for_each(|metric| {
+                matched_sequences_agg.sort_by(|a, b| {
+                    a.1.get(metric).expect(&format!("Metric {:?} not found in element {:?}", metric, a.1))
+                        .cmp(b.1.get(metric).expect(&format!("Metric {:?} not found in element {:?}", metric, b.1)))
+                })
+            });
             // matched_sequences_agg.sort_by(|a, b| a.1.get(0).unwrap().cmp(b.1.get(0).unwrap()) );
 
-            println!("Matched sequences and scores: {:?}", matched_sequences_agg);
+            println!("Matched sequences and scores:" );
+            matched_sequences_agg.iter().for_each(|seq_score| println!("{:?}", seq_score) );
             matched_sequences_agg
         }
 
@@ -345,7 +344,7 @@ pub mod cpt{
                     // Get the previous item in the sequence to match,
                     // at each iteration we will filter the possible_node_ids
                     while let Some(&next_item) = sequence_iter.next(){
-                        println!("Current NodeIds at item {:?}th item in sequence {:?}: {:?}", count, sequence, current_node_ids);
+                        // println!("Current NodeIds at item {:?}th item in sequence {:?}: {:?}", count, sequence, current_node_ids);
                         count = count + 1;
                         current_node_ids = current_node_ids.into_iter().map(|possible_node_ids|
                             if let Some(possible_node) = self.get(possible_node_ids.first().unwrap().0){
@@ -387,7 +386,7 @@ pub mod cpt{
                     // Get the next item in the sequence to match,
                     // at each iteration we will filter the possible_node_ids
                     while let Some(&next_item) = sequence_iter.next(){
-                        println!("Current NodeIds at item {:?}th item in sequence {:?}: {:?}", count, sequence, current_node_ids);
+                        // println!("Current NodeIds at item {:?}th item in sequence {:?}: {:?}", count, sequence, current_node_ids);
                         count = count + 1;
                         current_node_ids = current_node_ids.into_iter().filter_map(|possible_node_ids|
                                 if let Some(possible_node) = self.get(possible_node_ids.last().unwrap().0){
