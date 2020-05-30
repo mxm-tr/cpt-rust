@@ -1,6 +1,6 @@
 
-use std::io::Write;
-use cpt_rust::data_types::data_types::DataTypes;
+use std::io::{ Read, Write };
+use cpt_rust::data_types::data_types::{DataTypes, SimilarityScores};
 use cpt_rust::cpt::cpt::CPT;
 use cpt_rust::cpt::cpt::SequenceMatchFunction as SequenceMatchFunction;
 
@@ -20,20 +20,26 @@ fn main() -> std::io::Result<()> {
     
     let mut cpt = CPT::new();
 
-    cpt.add_sequence_to_root(&seq1);
-    cpt.add_sequence_to_root(&seq2);
-    cpt.add_sequence_to_root(&seq3);
-    cpt.add_sequence_to_root(&seq4);
+    cpt.add_sequence_to_root(seq1.to_vec());
+    cpt.add_sequence_to_root(seq2.to_vec());
+    cpt.add_sequence_to_root(seq3.to_vec());
+    cpt.add_sequence_to_root(seq4.to_vec());
 
     let seq_find: [crate::DataTypes; 3] = [DataTypes::Integer(3), DataTypes::Integer(7), DataTypes::Integer(1)];
 
     println!("---------");
 
-    cpt.match_sequence(&seq_find, true, &[SequenceMatchFunction::StrictEqual]);
+    cpt.match_sequence(&seq_find,
+        true,
+        &[SequenceMatchFunction::StrictEqual],
+    );
 
     println!("---------");
 
-    cpt.match_sequence(&seq_find, false, &[SequenceMatchFunction::SequenceLength, SequenceMatchFunction::AlgebraicDistance]);
+    cpt.match_sequence(&seq_find,
+        false,
+        &[SequenceMatchFunction::SequenceLength, SequenceMatchFunction::AlgebraicDistance],
+    );
 
     println!("---------");
 
