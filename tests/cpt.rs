@@ -16,8 +16,8 @@ mod tests {
     
         let mut cpt = CPT::new();
 
-        cpt.add_sequence(&seq1, NodeId::new());
-        cpt.add_sequence(&seq2, NodeId::new());
+        cpt.add_sequence(seq1.to_vec(), NodeId::new());
+        cpt.add_sequence(seq2.to_vec(), NodeId::new());
 
         // Test the CPT structure
         let file = File::open("tests/results/cpt-train.json")
@@ -46,10 +46,10 @@ mod tests {
         let seq_find: [DataTypes; 3] = [DataTypes::Integer(3), DataTypes::Integer(7), DataTypes::Integer(1)];
 
         let mut cpt = CPT::new();
-        cpt.add_sequence_to_root(&seq1);
-        cpt.add_sequence_to_root(&seq2);
-        cpt.add_sequence_to_root(&seq3);
-        cpt.add_sequence_to_root(&seq4);
+        cpt.add_sequence_to_root(seq1.to_vec());
+        cpt.add_sequence_to_root(seq2.to_vec());
+        cpt.add_sequence_to_root(seq3.to_vec());
+        cpt.add_sequence_to_root(seq4.to_vec());
 
         // let mut file = File::create("tests/results/test.dot").unwrap();
         // file.write(cpt.to_dot().as_bytes()).unwrap();
