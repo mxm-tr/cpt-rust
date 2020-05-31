@@ -11,34 +11,9 @@
   }
       
   ],
-      "node_ids":[
-        [
-          {
-            "index1":2
-          
-  },
-          {
-            "index1":3
-          
-  }
-        
-  ],
-        [
-          {
-            "index1":4
-          
-  },
-          {
-            "index1":5
-          
-  },
-          {
-            "index1":6
-          
-  }
-        
-  ]
-      
+      "node_ids":[ 
+        [1, 2],
+        [3, 4, 5]      
   ]
     
   },
@@ -46,30 +21,16 @@
       {
         "parent":null,
         "children":[
-          {
-            "index1":2
-          
-  }
-        
-  ],
+          1
+        ],
         "data":null
       
   },
       {
-        "parent":{
-          "index1":1
-        
-  },
+        "parent":0,
         "children":[
-          {
-            "index1":3
-          
-  },
-          {
-            "index1":5
-          
-  }
-        
+          2,
+          4        
   ],
         "data":{
           "Integer":2
@@ -78,16 +39,9 @@
       
   },
       {
-        "parent":{
-          "index1":2
-        
-  },
+        "parent":1,
         "children":[
-          {
-            "index1":4
-          
-  }
-        
+          3        
   ],
         "data":{
           "Integer":2
@@ -96,10 +50,7 @@
       
   },
       {
-        "parent":{
-          "index1":3
-        
-  },
+        "parent": 2,
         "children":[
   
         
@@ -111,16 +62,9 @@
       
   },
       {
-        "parent":{
-          "index1":2
-        
-  },
+        "parent":1,
         "children":[
-          {
-            "index1":6
-          
-  }
-        
+          5        
   ],
         "data":{
           "Integer":3
@@ -129,10 +73,7 @@
       
   },
       {
-        "parent":{
-          "index1":5
-        
-  },
+        "parent": 4,
         "children":[
   
         
@@ -145,15 +86,5 @@
   }
     
   ],
-    "sequences_lookup_table":[
-      {
-        "index1":4
-      
-  },
-      {
-        "index1":6
-      
-  }
-    
-  ]
+    "sequences_lookup_table":{"3": [], "5": []}
 }

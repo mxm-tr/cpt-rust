@@ -186,4 +186,10 @@ pub mod data_types {
             sum_score
         }
     }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Clone, PartialOrd, PartialEq)]
+    pub enum SequenceAttributes{
+        ClassStr(String)
+    }
 }

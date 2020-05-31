@@ -17,8 +17,7 @@ pub mod cpt{
     }
 
     use std::cmp::Ordering;
-    use std::num::NonZeroUsize;
-    use crate::data_types::data_types::DataTypes as DataTypes;
+    use crate::data_types::data_types::{DataTypes, SequenceAttributes};
     // use crate::data_types::data_types::Scores as Scores;
     use crate::data_types::data_types::SimilarityScores as SimilarityScores;
     use crate::nodes::nodes::{Node, NodeId};
@@ -111,7 +110,6 @@ pub mod cpt{
                             });
                         });
                     },
-                    _ => panic!("No sequence matching error found")
                 }
             });
             similarities
@@ -143,13 +141,18 @@ pub mod cpt{
         // List of nodes
         pub nodes: Vec<Node<T>>,
         // The lookup table references the last node of each sequence
-        pub sequences_lookup_table: Vec<NodeId>
+        // In addition to Sequence Attributes for each sequence
+        pub sequences_lookup_table: HashMap<NodeId, Vec<SequenceAttributes>>
     }
     impl<'a, T> Default for CPT<T> {
         fn default() -> Self {
             let mut nodes = Vec::new();
             nodes.push(Node {children: Vec::new(), parent: None, data: None});
-            Self { nodes: nodes, inverted_index: InvertedIndex::new(), sequences_lookup_table: Vec::new() }
+            Self {
+                nodes: nodes,
+                inverted_index: InvertedIndex::new(),
+                sequences_lookup_table: HashMap::<NodeId, Vec<SequenceAttributes>>::new()
+            }
         }
     }
     impl<'a> CPT<DataTypes>{
@@ -175,17 +178,24 @@ pub mod cpt{
                 // N0[label="Node 0"];
                 // Declare an edge using
                 // N0 -> N1[label=""];
-                dot_string.push_str(&format!("{}[label=\"ID={:?}, {:?}\"];\n", id, id + 1, node.data));
+                dot_string.push_str(&format!("{}[label=\"ID={:?}, {:?}\"];\n", id, id, node.data));
                 for child_id in node.children.as_slice(){
-                    dot_string.push_str(&format!("{} -> {:?};\n", id, &child_id.index0()));
+                    dot_string.push_str(&format!("{} -> {:?};\n", id, &child_id));
                 }
             }
             dot_string.push_str("}\n");
             dot_string.push_str("subgraph cluster_seq {");
 
-            for (id, last_node_id) in self.sequences_lookup_table.as_slice().iter().enumerate(){
-                dot_string.push_str(&format!("seq{}[label=\"Seq {:?}\"; shape=\"rectangle\"];\n", id, id));
-                dot_string.push_str(&format!("seq{} -> {:?};\n", id, last_node_id.index0()));
+            for (id, (last_node_id, sequence_attrs)) in self.sequences_lookup_table.iter().enumerate(){
+                dot_string.push_str(&format!("seq{}[label=\"Seq {:?}\"; shape=\"rectangle\"];\n", id, last_node_id ));
+                dot_string.push_str(&format!("seq{} -> {:?};\n", id, last_node_id));
+
+                sequence_attrs.iter().enumerate().for_each(|(index_attr, sequence_attr)|{
+                    dot_string.push_str(&format!("seq_attr{}_{}[label={:?}; shape=\"rectangle\"];\n", id, index_attr,
+                        format!("{:?}", sequence_attr).replace("\"", "") 
+                    ));
+                    dot_string.push_str(&format!("seq_attr{}_{} -> seq{:?};\n", id, index_attr, id));
+                })
             }
             dot_string.push_str("}");
             dot_string.push_str("}");
@@ -193,13 +203,13 @@ pub mod cpt{
         }
 
         pub fn get_root_id() -> NodeId{
-            NodeId::new()
+            NodeId::MIN
         }
 
         pub fn new_node(&mut self, new_node: Node<DataTypes>) -> NodeId{
-            let next_index1 = NonZeroUsize::new(self.nodes.len().wrapping_add(1)).expect("Cannot access latest index");
+            let next_index = self.nodes.len();
             self.nodes.push(new_node);
-            let new_node_id = NodeId::from_non_zero_usize(next_index1);
+            let new_node_id = NodeId::from(next_index);
             self.inverted_index.insert_value(self.get_data(new_node_id).expect("Cannot insert data in inverted index"), new_node_id);
             new_node_id
         }
@@ -207,13 +217,13 @@ pub mod cpt{
         pub fn get(&self, id: NodeId) -> Option<&Node<DataTypes>> {
             // println!("Getting node {:?}", id);
             // println!("-- Got node {:?}", self.nodes.get(id.index0()));
-            self.nodes.get(id.index0())
+            self.nodes.get(id)
         }
 
         pub fn update_node(& mut self, id: NodeId, new_node: Node<DataTypes>) {
             // println!("Updating node {:?}:", id);
             // println!("-- Before: {:?}", self.nodes.get(id.index0()));
-            self.nodes[id.index0()] = new_node;
+            self.nodes[id] = new_node;
             // println!("-- After: {:?}", self.nodes.get(id.index0()));
         }
 
@@ -263,19 +273,26 @@ pub mod cpt{
             }
         }
 
-        pub fn add_sequence_to_root(&mut self, sequence: Vec<DataTypes>) {
-            self.add_sequence(sequence, CPT::get_root_id())
+        pub fn add_sequence_to_root(&mut self, sequence: Vec<DataTypes>, sequence_attributes: Option<Vec<SequenceAttributes>>) {
+            self.add_sequence(sequence, CPT::get_root_id(), sequence_attributes)
         }
 
-        pub fn add_sequence(&mut self, sequence: Vec<DataTypes>, node_id: NodeId) where DataTypes: PartialEq<DataTypes> + Copy {
+        pub fn add_sequence(&mut self, sequence: Vec<DataTypes>, node_id: NodeId, sequence_attributes: Option<Vec<SequenceAttributes>>) where DataTypes: PartialEq<DataTypes> + Copy {
             // "Training" of the tree: it adds each item of a sequence to the tree,
             // starting from the Node at node_id, 
             let mut current_node_id = node_id;
             sequence.iter().for_each(|&item|{
                 current_node_id = self.add_child(item, current_node_id);
             });
-            self.sequences_lookup_table.push(current_node_id);
-            println!("Added sequence {:?} to node {:?}", sequence, node_id);
+
+            // If attributes have been provided, insert them in the attributes table
+            if let Some(sequence_attributes_vec) = sequence_attributes {
+                self.sequences_lookup_table.entry(current_node_id).or_insert(vec![]).extend(sequence_attributes_vec);
+                // println!("Added attributes {:?} to node {:?}", sequence, node_id);
+            }else{
+                self.sequences_lookup_table.insert(current_node_id, vec![]);
+                // println!("Added sequence {:?} to node {:?}", sequence, node_id);
+            }
         }
 
         pub fn match_sequence(&self, sequence: &[DataTypes], backwards: bool, match_functions: &[SequenceMatchFunction]) -> Vec<SequenceMatchResult> {
@@ -427,7 +444,7 @@ pub mod cpt{
             println!("Prediction prefix unique values: {:?}", prefix_set);
 
             // For each of the unique item in the prefix, get the ids of the sequence that contain them
-            let all_match_sequence_ids: Vec<Vec<usize>> = prefix_set.iter().map(|prefix_value| {
+            let all_match_sequence_ids: Vec<Vec<NodeId>> = prefix_set.iter().map(|prefix_value| {
                 // We get the nodes that match these values
                 if let Some(node_ids) = self.inverted_index.get_value_ids(*prefix_value){
                     // For each node matching a given value, we have to find
@@ -443,7 +460,11 @@ pub mod cpt{
                                 .map(|node_id| self.get(node_id).unwrap().children.clone() ).collect::<Vec<Vec<NodeId>>>().concat();
                     }
                     // Now let's lookup the training sequences that point to the leaf nodes
-                    let match_sequence_ids: Vec<usize> = leaf_node_ids.iter().map(|leaf_node_id| self.sequences_lookup_table.binary_search(leaf_node_id).unwrap_or_else(|x| x) ).collect();
+                    let match_sequence_ids: Vec<NodeId> = leaf_node_ids.iter().filter_map(|leaf_node_id| {
+                        if let Some(_leaf_node) = self.sequences_lookup_table.get(leaf_node_id){
+                            Some(*leaf_node_id)
+                        } else { None }
+                    }).collect();
                     println!("Matching sequences for prefix value {:?}: {:?}", prefix_value, match_sequence_ids);
                     match_sequence_ids
                 } else { vec![] }
@@ -458,8 +479,7 @@ pub mod cpt{
             // For each sequence, let's look at the last occurence of an item the sequence:
             // Given the input sequence xxyy with yy being the prefix, If the training Sequence aabbxxyz exists, the consequent returned is yz
             let mut count_consequent_values_support = HashMap::<DataTypes,usize>::new();
-            unique_matched_sequence_ids.iter().for_each(|sequence_id| {
-                if let Some(&last_node_id) = self.sequences_lookup_table.get(*sequence_id){
+            unique_matched_sequence_ids.clone().into_iter().for_each(|last_node_id| {
                     let mut current_node_id = last_node_id;
                     // let mut consequent: Vec<&Node<DataTypes>> = Vec::<&Node<DataTypes>>::new();
                     let mut consequent: Vec<NodeId> = Vec::<NodeId>::new();
@@ -486,12 +506,11 @@ pub mod cpt{
                                 }
                             }
                         }
-                    }
                     // Consequent items have been pushed, need to reverse the list
                     consequent.reverse();
                     // The consequent given a training sequence is now:
                     // xyyyyy: x being the item that the training sequence and the input sequence have in common
-                    println!("Consequent for input sequence {:?} given training sequence {:?}: {:?}", sequence, sequence_id, consequent.iter().map(|node_id| format!("{:?}, {:?}", node_id, self.get_data(*node_id))).collect::<Vec<String>>().join(" -> "));
+                    println!("Consequent for input sequence seq{:?} given training sequence {:?}: {:?}", sequence, last_node_id, consequent.iter().map(|node_id| format!("{:?}, {:?}", node_id, self.get_data(*node_id))).collect::<Vec<String>>().join(" -> "));
                 }
             });
 

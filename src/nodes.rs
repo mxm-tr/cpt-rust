@@ -1,7 +1,5 @@
 
 pub mod nodes {
-    use core::cmp::Ordering;
-    use std::num::NonZeroUsize;
     use std::fmt::Display as FmtDisplay;
     use std::fmt::Formatter as FmtFormatter;
     use std::fmt::Result as FmtResult;
@@ -9,62 +7,7 @@ pub mod nodes {
     use crate::data_types::data_types::DataTypes;
     use serde::{Serialize, Deserialize};
 
-    #[derive(Serialize, Deserialize, Debug)]
-    #[derive(Copy, Clone)]
-    #[derive(Eq, Hash)]
-    pub struct NodeId {
-        // Class used for NodeIDs, 1 indexing is the default
-        // .index0 is implmented to get the 0 value
-        pub index1: NonZeroUsize,
-    }
-
-   impl Ord for NodeId {
-        fn cmp(&self, other: &Self) -> Ordering {
-            self.index1.cmp(&other.index1)
-        }
-    }
-
-    impl PartialOrd for NodeId {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-    
-    impl PartialEq for NodeId {
-        fn eq(&self, other: &Self) -> bool {
-            self.index1 == other.index1
-        }
-    }
-
-    impl NodeId {
-
-        pub fn new() -> NodeId {
-            Self::default()
-        }
-
-        pub fn new_with_value(value: usize) -> NodeId {
-            NodeId {index1: NonZeroUsize::new(value)
-                .expect(&format!("Cannot create index with value {}", value))
-            }
-        }
-
-        pub(crate) fn index0(self) -> usize {
-            // This is totally safe because `self.index1 >= 1` is guaranteed by
-            // `NonZeroUsize` type.
-            self.index1.get() - 1
-        }
-
-        /// Creates a new `NodeId` from the given one-based index.
-        pub(crate) fn from_non_zero_usize(index1: NonZeroUsize) -> Self {
-            NodeId { index1 }
-        }
-    }
-
-    impl Default for NodeId {
-        fn default() -> Self {
-            Self { index1: NonZeroUsize::new(1).expect("Cannot allocate uint for nodes indexing.")  }
-        }
-    }
+    pub type NodeId = usize;
 
     #[derive(Serialize, Deserialize, Debug)]
     #[derive(Clone)]
