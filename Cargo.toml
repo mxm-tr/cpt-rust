@@ -8,8 +8,9 @@ edition = "2018"
 
 
 [lib]
-name = "rust2py"
+name = "cpt_rust"
 crate-type = ["cdylib"]
+path = "src/python.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

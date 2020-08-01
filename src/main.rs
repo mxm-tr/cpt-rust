@@ -1,8 +1,10 @@
+mod cpt;//https://github.com/rust-lang/rls-vscode/issues/686#issuecomment-558368010
 
 use std::io::{ Read, Write };
-use cpt_rust::data_types::data_types::{DataTypes, SimilarityScores, SequenceAttributes};
-use cpt_rust::cpt::cpt::CPT;
-use cpt_rust::cpt::cpt::SequenceMatchFunction as SequenceMatchFunction;
+use cpt::data_types::data_types::{DataTypes, SimilarityScores, SequenceAttributes};
+use cpt::data_types::data_types::SequenceMatchFunction;
+use cpt::cpt::CPT;
+
 
 use std::fs::File;
 

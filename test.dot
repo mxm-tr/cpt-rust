@@ -1,13 +1,34 @@
-digraph  CPT { 
-0[label="None"];
+digraph  Result { 
+subgraph cluster_cpt {0[label="ID=0, None"];
 0 -> 1;
-1[label="Some(Integer(2))"];
+0 -> 4;
+1[label="ID=1, Some(Integer(1))"];
 1 -> 2;
-1 -> 4;
-2[label="Some(Integer(2))"];
+1 -> 7;
+2[label="ID=2, Some(Integer(2))"];
 2 -> 3;
-3[label="Some(Integer(3))"];
-4[label="Some(Integer(3))"];
+3[label="ID=3, Some(Integer(3))"];
+4[label="ID=4, Some(Integer(4))"];
 4 -> 5;
-5[label="Some(Integer(3))"];
+5[label="ID=5, Some(Integer(5))"];
+5 -> 6;
+6[label="ID=6, Some(Integer(6))"];
+7[label="ID=7, Some(Integer(5))"];
+7 -> 8;
+7 -> 9;
+8[label="ID=8, Some(Integer(6))"];
+9[label="ID=9, Some(Integer(4))"];
 }
+subgraph cluster_seq {seq0[label="Seq 9"; shape="rectangle"];
+seq0 -> 9;
+seq1[label="Seq 3"; shape="rectangle"];
+seq1 -> 3;
+seq2[label="Seq 6"; shape="rectangle"];
+seq2 -> 6;
+seq_attr2_0[label="ClassStr(Test)"; shape="rectangle"];
+seq_attr2_0 -> seq2;
+seq_attr2_1[label="ClassStr(Test2)"; shape="rectangle"];
+seq_attr2_1 -> seq2;
+seq3[label="Seq 8"; shape="rectangle"];
+seq3 -> 8;
+}}

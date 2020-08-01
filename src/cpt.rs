@@ -1,15 +1,16 @@
+pub mod data_types;
+pub mod nodes;
 
 pub mod cpt{
+
+    use super::data_types::data_types::{DataTypes, SequenceAttributes};
+    // use crate::data_types::data_types::Scores as Scores;
+    use super::data_types::data_types::{SimilarityScores, SequenceMatchFunction};
+    use super::nodes::nodes::{Node, NodeId};
+
     pub type Scores = HashMap::<SequenceMatchFunction,SimilarityScores>;
     pub type NodeMatchResult = (NodeId, Vec<(SequenceMatchFunction, SimilarityScores)>);
     pub type SequenceMatchResult = (Vec<NodeMatchResult>, Scores);
-
-    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-    pub enum SequenceMatchFunction{
-        StrictEqual,
-        AlgebraicDistance,
-        SequenceLength
-    }
 
     #[derive(Clone, Copy)]
     pub enum SequenceRetreiveFunction{
@@ -17,10 +18,6 @@ pub mod cpt{
     }
 
     use std::cmp::Ordering;
-    use crate::data_types::data_types::{DataTypes, SequenceAttributes};
-    // use crate::data_types::data_types::Scores as Scores;
-    use crate::data_types::data_types::SimilarityScores as SimilarityScores;
-    use crate::nodes::nodes::{Node, NodeId};
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct InvertedIndex<T>{

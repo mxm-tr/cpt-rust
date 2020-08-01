@@ -4,7 +4,7 @@ pub mod nodes {
     use std::fmt::Formatter as FmtFormatter;
     use std::fmt::Result as FmtResult;
 
-    use crate::data_types::data_types::DataTypes;
+    use crate::cpt::data_types::data_types::DataTypes;
     use serde::{Serialize, Deserialize};
 
     pub type NodeId = usize;

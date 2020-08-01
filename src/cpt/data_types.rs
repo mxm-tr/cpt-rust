@@ -5,7 +5,12 @@ pub mod data_types {
     use std::ops::AddAssign;
     use serde::{Serialize, Deserialize};
 
-    use crate::cpt::cpt::SequenceMatchFunction as SequenceMatchFunction;
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+    pub enum SequenceMatchFunction{
+        StrictEqual,
+        AlgebraicDistance,
+        SequenceLength
+    }
 
     #[derive(Serialize, Deserialize, Debug)]
     #[derive(Copy, Clone, Eq, PartialOrd, PartialEq, Ord, Hash)]
